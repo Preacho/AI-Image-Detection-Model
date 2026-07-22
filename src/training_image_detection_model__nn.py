@@ -8,6 +8,10 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.optimizers import Adam, SGD
 from PIL import Image
 
+#pip install tensorflow
+#pip install tensorboard
+#pip install pillow
+
 epoch = 40
 num_classes = 2
 img_width = 300
@@ -40,8 +44,8 @@ data_test = define_data(
     (img_height, img_width)
     )
 
-train_size =  int(len(data_train) * 0.6)  
-val_size = int(len(data_train) * 0.4) 
+train_size =  int(len(data_train) * 0.75)  
+val_size = int(len(data_train) * 0.25) 
 test_size = int(len(data_test) *1.0)
 
 train = data_train.take(train_size)
@@ -59,19 +63,13 @@ nn_model = models.Sequential(
     layers.Dropout(0.2),
     layers.Conv2D(64, (3, 3), 1, activation="relu"),
     layers.Conv2D(64, (3, 3), 1, activation="relu"),
-    layers.MaxPooling2D((2,2)),
-    layers.Dropout(0.2),
-    layers.Conv2D(128, (3,3), 1, activation="relu"),
-    layers.Conv2D(128, (3,3), 1, activation="relu"),
-    layers.MaxPooling2D((2,2)),
-    layers.Dropout(0.2),
-    layers.Conv2D(256, (3,3), 1, activation="relu"),
+    
     layers.MaxPooling2D((2,2)),
     layers.Dropout(0.25),
     layers.GlobalAveragePooling2D(),
-    layers.Dense(128, activation="relu"),
-    layers.Dropout(0.3),
     layers.Dense(64, activation="relu"),
+    layers.Dropout(0.3),
+    layers.Dense(32, activation="relu"),
     layers.Dropout(0.2),
     layers.Dense(1, activation="sigmoid"),
     ]
@@ -89,4 +87,4 @@ logdir = "logs"
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 history = nn_model.fit(train, epochs = epoch, validation_data = validate, callbacks = [early_stop, tensorboard_callback])
 
-nn_model.save("image_ai_detector.h5")
+nn_model.save("image_ai_detector3.h5")
