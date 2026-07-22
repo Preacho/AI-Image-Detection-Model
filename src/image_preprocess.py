@@ -4,9 +4,10 @@ import glob
 import seaborn as sns 
 import imghdr 
 import cv2 
+from tqdm import tqdm
+import numpy as np
+import pandas as pd 
 
-img_width = 300
-img_height = 300 
 
 directory = "preprocessed_dataset"
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -39,85 +40,41 @@ if(not os.path.exists(directory)):
     os.mkdir(test_real_path, mode)
 
 
-#Resize all images to 192 by 192, grayscale 
+#Resize all images to 300 by 300
 train_path = "dataset/train"
 test_path = "dataset/test"
 
 save_train_path = "preprocessed_dataset/train"
 save_test_path = "preprocessed_dataset/test"
 
-sorted_list = ["real", "fake"]
-for path in sorted_list:
-    image_directory_path = os.path.join(train_path, path)
-    save_image_directory_path = os.path.join(save_train_path, path)
-    print("preprocessing " + path)
-    for i in range(24000):
-        img_name = str(i+1)
-        
-        if(i+1 < 1000):
-            img_name = "0" + img_name
-        if(i+1 < 100):
-            img_name = "0" + img_name
-        if(i+1 < 10):
-            img_name = "0" + img_name 
-        
-        img_name = img_name
-        
-        #Skip if the the image was already preprocessed in the directory
-        if os.path.exists(os.path.join(save_image_directory_path, img_name + ".jpg")):
-            continue
-        
-        #Find out what type the image is
-        if os.path.exists(os.path.join(image_directory_path, img_name + ".jpg")):
-            image_type = ".jpg"
-            
-        elif os.path.exists(os.path.join(image_directory_path, img_name + ".png")):
-            image_type = ".png"
-        
-        else:
-            continue
-        
-        img = Image.open(os.path.join(image_directory_path, img_name + image_type))
-        
-        new_img = img.convert("RGB")
-        new_img = new_img.resize((300,300))
-        
-        new_img.save(save_image_directory_path + "/" + img_name + ".jpg", "JPEG")
 
-for path in sorted_list:
-    image_directory_path = os.path.join(test_path, path)
-    save_image_directory_path = os.path.join(save_test_path, path)
-    for i in range(6000):
-        img_name = str(i+1)
+
+
+def image_preprocessing(input_path: str, output_path: str, csv_name: str, ):
+    
+    img_width = 600
+    img_height = 600 
+    
+    for class_name in os.listdir(train_path):
+        image_directory_path = os.path.join(input_path, class_name)
+        save_image_directory_path = os.path.join(output_path, class_name)
         
-        if(i+1 < 1000):
-            img_name = "0" + img_name
-        if(i+1 < 100):
-            img_name = "0" + img_name
-        if(i+1 < 10):
-            img_name = "0" + img_name
-        
-        
-        #Skip if the the image was already preprocessed in the directory
-        if os.path.exists(os.path.join(save_image_directory_path, img_name + ".jpg")):
-            continue
-        
-        #Find out what type the image is
-        if os.path.exists(os.path.join(image_directory_path, img_name + ".jpg")):
-            image_type = ".jpg"
+        for img_file in os.listdir(image_directory_path):
             
-        elif os.path.exists(os.path.join(image_directory_path, img_name + ".png")):
-            image_type = ".png"
-        
-        else:
-            continue
-        
-        
-        
-        img = Image.open(os.path.join(image_directory_path, img_name + image_type))
-        
-        new_img = img.convert("RGB")
-        new_img = new_img.resize((300,300))
-        
-        new_img.save(save_image_directory_path + "/" + img_name + ".jpg", "JPEG")
-        
+            
+            #Skip if the the image was already preprocessed in the directory
+            if os.path.exists(os.path.join(save_image_directory_path, img_file)):
+                continue
+            
+            img = Image.open(os.path.join(image_directory_path, img_file))
+            if img is None:
+                continue
+            
+            new_img = img.convert("L")
+            new_img = new_img.resize((img_width, img_height))
+            
+            new_img.save(os.path.join(save_image_directory_path, img_file))
+
+
+image_preprocessing(input_path = train_path, output_path=save_train_path, csv_name="training_data.csv")
+image_preprocessing(input_path = test_path, output_path=save_test_path, csv_name="testing_data.csv")

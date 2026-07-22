@@ -1,3 +1,4 @@
 preprocessed_dataset/
 .venv/
 logs/
+dataset/
