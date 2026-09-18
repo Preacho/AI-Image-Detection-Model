@@ -26,7 +26,6 @@ def define_data(directory, batch_size, image_size):
     batch_size = batch_size,
     image_size = image_size  
 ) 
-    data_iterator = data.as_numpy_iterator()
     data = data.map(lambda x, y: (x / 255, y))
     return data
 
@@ -87,4 +86,4 @@ logdir = "logs"
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 history = nn_model.fit(train, epochs = epoch, validation_data = validate, callbacks = [early_stop, tensorboard_callback])
 
-nn_model.save("image_ai_detector3.h5")
+nn_model.save("image_ai_detector4.h5")

@@ -1,59 +1,46 @@
 import os
 import numpy as np
 import pandas as pd
-from PIL import Image
+import tensorflow as tf
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, precision_score, f1_score, recall_score, roc_auc_score
 from sklearn.preprocessing import StandardScaler
 import joblib
-import matplotlib.pyplot as plt
-import seaborn as sns
-from tqdm import tqdm
-
 # ---------- CONFIGURATION ----------
 PREPROCESSED_DIR = "preprocessed_dataset"
 IMG_WIDTH = 300
 IMG_HEIGHT = 300
 RANDOM_STATE = 42
+NPZ_PATH = "training_data.npz"
 
-# ---------- 1. LOAD IMAGES AND LABELS ----------
-def load_data_from_npz(npz_path=NPZ_PATH):
-    """Load train/test arrays from a .npz file."""
-    print(f"Loading data from: {npz_path}")
-    data = np.load(npz_path)
 
-    X_train = data["X_train"]
-    y_train = data["y_train"]
-    X_test  = data["X_test"]
-    y_test  = data["y_test"]
 
-    # Flatten images if they are still (N, H, W, C) or (N, H, W)
-    if X_train.ndim > 2:
-        X_train = X_train.reshape(X_train.shape[0], -1)
-        X_test  = X_test.reshape(X_test.shape[0], -1)
 
-    X_train = X_train.astype(np.float32)
-    X_test  = X_test.astype(np.float32)
+def load_dataset_from_imageset(directory, batch_size = 64, image_size = (96,96), color_mode='grayscale'):
+    data = tf.keras.utils.image_dataset_from_directory(
+        directory,
+        batch_size = batch_size,
+        image_size = image_size, 
+        color_mode = color_mode, 
+        shuffle = False, 
+    )
+    class_names = data.class_names
+    Xs, ys = [], []
 
-    class_names = [str(c) for c in np.unique(y_train)]
+    for x, y in data:
+        x = x.numpy().astype(np.float32)/ 255.0
+        Xs.append(x.reshape(x.shape[0], -1))
+        ys.append(y.numpy())
 
-    print(f"Train shape: {X_train.shape}")
-    print(f"Test shape : {X_test.shape}")
-    print(f"Classes    : {class_names}")
-    print(f"Class distribution: {dict(zip(*np.unique(y_train, return_counts=True)))}")
-
-    return X_train, X_test, y_train, y_test, class_names
+    return np.concatenate(Xs), np.concatenate(ys), class_names 
 
 
 def load_data():
     """Load train and test data from preprocessed directories"""
     
-    train_dir = os.path.join(PREPROCESSED_DIR, "train")
-    test_dir = os.path.join(PREPROCESSED_DIR, "test")
-    
-    X_train, y_train, class_names = load_data_from_npz("training_data.npz")
-    X_test, y_test, _ = load_data_from_npz("testing_data.npz")
+    X_train, y_train, class_names = load_dataset_from_imageset("preprocessed_dataset/train", 64, (192,192))
+    X_test, y_test, _ = load_dataset_from_imageset("preprocessed_dataset/test", 64, (192,192))
     
     print(f"\nTrain shape: {X_train.shape}")
     print(f"Test shape: {X_test.shape}")
@@ -93,10 +80,10 @@ def train_random_forest():
     print("="*60)
     
     rf_model = RandomForestClassifier(
-        n_estimators=200,        # Number of trees
-        max_depth=20,            # Maximum depth of trees
-        min_samples_split=5,     # Minimum samples to split a node
-        min_samples_leaf=2,      # Minimum samples in leaf
+        n_estimators=300,        # Number of trees
+        max_depth=25,            # Maximum depth of trees
+        min_samples_split=10,     # Minimum samples to split a node
+        min_samples_leaf=4,      # Minimum samples in leaf
         max_features='sqrt',     # Features to consider for best split
         random_state=RANDOM_STATE,
         n_jobs=-1,              # Use all CPU cores
@@ -110,6 +97,22 @@ def train_random_forest():
     os.makedirs("models", exist_ok=True)
     joblib.dump(rf_model, "models/random_forest_model.pkl")
     print("✅ Model saved to: models/random_forest_model.pkl")
+
+    y_pred = rf_model.predict(X_test) 
+    y_prob = rf_model.predict_proba(X_test)[:,1]
+
+    model_acc = accuracy_score(y_test, y_pred)
+    model_prec = precision_score(y_test,y_pred)
+    model_f1 = f1_score(y_test, y_pred)
+    model_recall = recall_score(y_test, y_pred)
+    model_aucroc = roc_auc_score(y_test,y_prob)
+
+    print(f"Accuracy    : {model_acc:.4f}")
+    print(f"Precision   : {model_prec:.4f}")
+    print(f"f1   : {model_f1:.4f}")
+    print(f"Recall    : {model_recall:.4f}")
+    print(f"Auc Roc    : {model_aucroc:.4f}")
+
     
 
 
@@ -118,4 +121,4 @@ def train_random_forest():
 
 
 if __name__ == "__main__":
-    model, X_train, X_test, y_train, y_test = train_random_forest()
+    train_random_forest()
