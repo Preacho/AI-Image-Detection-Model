@@ -2,3 +2,4 @@ preprocessed_dataset/
 .venv/
 logs/
 dataset/
+src\__pycache__

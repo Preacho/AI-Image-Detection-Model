@@ -40,7 +40,7 @@ if(not os.path.exists(directory)):
     os.mkdir(test_real_path, mode)
 
 
-#Resize all images to 300 by 300
+#Resize all images to x by x
 train_path = "dataset/train"
 test_path = "dataset/test"
 
@@ -55,16 +55,11 @@ def image_preprocessing(input_path: str, output_path: str, output_npz_name: str,
     img_width = 300
     img_height = 300
     
-    images = np.empty((size, img_height, img_width, 3), dtype = np.uint8)
-    labels = np.empty((size,), dtype = np.uint8)
-    class_names = ['fake','real']
-    class_to_label = {'fake': 0, 'real': 1}
     
     idx = 0 
     for class_name in os.listdir(train_path):
         image_directory_path = os.path.join(input_path, class_name)
         save_image_directory_path = os.path.join(output_path, class_name)
-        label = class_to_label[class_name]
         
         
         for img_file in os.listdir(image_directory_path):
@@ -78,23 +73,11 @@ def image_preprocessing(input_path: str, output_path: str, output_npz_name: str,
             if img is None:
                 continue
             
-            new_img = img.convert("RGB")
-            new_img = new_img.resize((img_width, img_height))
+            new_img = img.resize((img_width, img_height))
+            new_img = new_img.convert("RGB")
             
             new_img.save(os.path.join(save_image_directory_path, img_file))
             
-            images[idx] = np.array(new_img, dtype = np.uint8)
-            labels[idx] = label
-            idx += 1
-    
-    np.savez_compressed(
-        output_npz_name,
-        images=images,
-        labels=labels,
-        class_names = np.array(class_names)
-        
-    )
-
 
 image_preprocessing(input_path = train_path, output_path=save_train_path, output_npz_name = "training_data.npz", size = 48000)
 image_preprocessing(input_path = test_path, output_path=save_test_path, output_npz_name= "testing_data.npz", size = 12000)
